@@ -21,7 +21,12 @@ const fetcher = async (path, params = {}) => {
 }
 
 // Filter out any adult-flagged movies (belt-and-suspenders on top of include_adult=false)
-const filterAdult = (arr) => (arr || []).filter(m => !m.adult)
+const explicitKeywords = ['sex', 'nudity', 'erotic', 'porn', 'explicit'];
+const filterAdult = (arr) => (arr || []).filter(m => {
+  if (m.adult) return false;
+  const text = `${m.title || ''} ${m.overview || ''}`.toLowerCase();
+  return !explicitKeywords.some(kw => new RegExp(`\\b${kw}\\b`).test(text));
+});
 
 // ─── Image Helpers ─────────────────────────────────────────────────────────────
 export const TMDB_KEY = TOKEN

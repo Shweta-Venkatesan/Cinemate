@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { Search } from 'lucide-react'
-import { useUnifiedSearch } from '../../hooks/useTmdb'
+import { useUnifiedSearch, usePopular } from '../../hooks/useTmdb'
 import { addSearchHistory } from '../../services/firestoreService'
 import MovieCard from '../../components/movie/MovieCard'
 import { SkeletonGrid } from '../../components/ui/SkeletonCard'
@@ -12,6 +12,7 @@ export default function SearchResultsPage() {
   const [searchParams] = useSearchParams()
   const query = searchParams.get('q') || ''
   const { data, isLoading } = useUnifiedSearch(query)
+  const { data: discoverData, isLoading: isDiscoverLoading } = usePopular(1)
   const { user } = useSelector(s => s.auth)
   const loggedRef = useRef(new Set())
 
@@ -46,12 +47,24 @@ export default function SearchResultsPage() {
           </div>
 
           {!query ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-20 h-20 bg-surface-light rounded-full flex items-center justify-center mb-6">
-                <Search className="w-10 h-10 text-text-secondary opacity-50" />
+            <div className="py-8">
+              <div className="flex flex-col items-center justify-center py-10 text-center border-b border-white/10 mb-8">
+                <div className="w-20 h-20 bg-surface-light rounded-full flex items-center justify-center mb-6">
+                  <Search className="w-10 h-10 text-text-secondary opacity-50" />
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">Discover something new</h2>
+                <p className="text-text-secondary max-w-md">Try searching for a movie title, an actor like "Tom Hardy", or a genre like "Sci-Fi".</p>
               </div>
-              <h2 className="text-xl font-bold text-white mb-2">Discover something new</h2>
-              <p className="text-text-secondary max-w-md">Try searching for a movie title, an actor like "Tom Hardy", or a genre like "Sci-Fi".</p>
+              <h3 className="text-xl font-bold text-white mb-6">Popular Right Now</h3>
+              {isDiscoverLoading ? (
+                <SkeletonGrid count={18} />
+              ) : discoverData?.results?.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6">
+                  {discoverData.results.map((movie) => (
+                    <MovieCard key={movie.id} movie={movie} showBadge={true} compact={false} />
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : isLoading ? (
             <SkeletonGrid count={18} />
