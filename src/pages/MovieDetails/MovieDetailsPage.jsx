@@ -59,16 +59,25 @@ export default function MovieDetailsPage() {
 
         {/* ── Backdrop Hero ─────────────────────────────────────────────────── */}
         <div className="relative w-full h-[42vh] sm:h-[65vh] lg:h-[75vh]">
-          {/* Background image */}
-          <div className="absolute inset-0">
-            {details.backdrop_path ? (
+          {/* Background image / Video Trailer */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none bg-black">
+            {trailerVideo ? (
+              <>
+                <iframe
+                  className="absolute top-1/2 left-1/2 w-[300vw] sm:w-[150vw] aspect-video max-w-none -translate-x-1/2 -translate-y-1/2 opacity-50"
+                  src={`https://www.youtube.com/embed/${trailerVideo.key}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&loop=1&modestbranding=1&playsinline=1&rel=0&playlist=${trailerVideo.key}`}
+                  allow="autoplay; encrypted-media"
+                  title="Trailer Background"
+                />
+              </>
+            ) : details.backdrop_path ? (
               <img
                 src={backdropUrl(details.backdrop_path)}
                 alt={details.title}
-                className="w-full h-full object-cover object-top"
+                className="w-full h-full object-cover object-top opacity-50"
               />
             ) : (
-              <div className="w-full h-full bg-surface-light" />
+              <div className="w-full h-full bg-surface-light opacity-50" />
             )}
             <div className="absolute inset-0 bg-hero-overlay" />
             <div className="absolute inset-x-0 bottom-0 h-40 bg-bottom-fade" />
