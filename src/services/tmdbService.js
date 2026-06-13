@@ -4,7 +4,8 @@ const TOKEN = import.meta.env.VITE_TMDB_API_KEY
 
 const buildUrl = (path, params = {}) => {
   if (!TOKEN) throw new Error('TMDB API key missing')
-  const url = new URL(path, window.location.origin + BASE_URL)
+  // ensure path resolves correctly (e.g., /tmdb-api/trending/...)
+  const url = new URL(`${BASE_URL}${path}`, window.location.origin)
   url.searchParams.set('api_key', TOKEN)
   // Always exclude adult content at the API level
   url.searchParams.set('include_adult', 'false')
