@@ -1,27 +1,19 @@
-// Using a free proxy to bypass regional ISP blocks for TMDB (like in India)
-const PROXY_URL = 'https://corsproxy.io/?'
-const BASE_URL = `${PROXY_URL}${encodeURIComponent('https://api.themoviedb.org/3')}`
+// TMDB API — called directly (TMDB natively supports CORS, no proxy needed)
+const BASE_URL = 'https://api.themoviedb.org/3'
 const TOKEN = import.meta.env.VITE_TMDB_API_KEY
 
-const headers = {
-  'Authorization': `Bearer ${TOKEN}`,
-  'Content-Type': 'application/json',
-}
-
-// If no Bearer token, fall back to api_key param
 const buildUrl = (path, params = {}) => {
   if (!TOKEN) throw new Error('TMDB API key missing')
-  // We need to build the target URL first
-  const targetUrl = new URL(`https://api.themoviedb.org/3${path}`)
-  targetUrl.searchParams.set('api_key', TOKEN)
-  Object.entries(params).forEach(([k, v]) => targetUrl.searchParams.set(k, v))
-  
-  // Then wrap it in the proxy
-  return `${PROXY_URL}${encodeURIComponent(targetUrl.toString())}`
+  const url = new URL(`${BASE_URL}${path}`)
+  url.searchParams.set('api_key', TOKEN)
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
+  return url.toString()
 }
 
 const fetcher = async (path, params = {}) => {
-  const res = await fetch(buildUrl(path, params))
+  const res = await fetch(buildUrl(path, params), {
+    headers: { 'Content-Type': 'application/json' },
+  })
   if (!res.ok) throw new Error(`TMDB ${res.status}: ${res.statusText}`)
   return res.json()
 }
@@ -29,15 +21,12 @@ const fetcher = async (path, params = {}) => {
 // ─── Image Helpers ─────────────────────────────────────────────────────────────
 export const TMDB_KEY = TOKEN
 
-// Use a dedicated image proxy for images, as CORS proxy might fail to return raw binary
-const IMAGE_PROXY = 'https://wsrv.nl/?url='
+// TMDB image CDN supports CORS natively — no proxy needed
+const IMAGE_BASE = 'https://image.tmdb.org/t/p'
 
-export const posterUrl = (path, size = 'w500') => 
-  path ? `${IMAGE_PROXY}${encodeURIComponent(`https://image.tmdb.org/t/p/${size}${path}`)}` : null
-export const backdropUrl = (path, size = 'original') => 
-  path ? `${IMAGE_PROXY}${encodeURIComponent(`https://image.tmdb.org/t/p/${size}${path}`)}` : null
-export const profileUrl = (path, size = 'w185') => 
-  path ? `${IMAGE_PROXY}${encodeURIComponent(`https://image.tmdb.org/t/p/${size}${path}`)}` : null
+export const posterUrl   = (path, size = 'w500')     => path ? `${IMAGE_BASE}/${size}${path}` : null
+export const backdropUrl = (path, size = 'original') => path ? `${IMAGE_BASE}/${size}${path}` : null
+export const profileUrl  = (path, size = 'w185')     => path ? `${IMAGE_BASE}/${size}${path}` : null
 
 // ─── Genre ID Map ──────────────────────────────────────────────────────────────
 export const GENRE_MAP = {
