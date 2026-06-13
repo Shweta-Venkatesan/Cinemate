@@ -15,19 +15,23 @@ const buildUrl = (path, params = {}) => {
 const fetcher = async (path, params = {}) => {
   const url = buildUrl(path, params)
   try {
-    const res = await fetch(url, {
-      headers: { 'Content-Type': 'application/json' },
-    })
+    const res = await fetch(url)
     if (!res.ok) throw new Error(`TMDB ${res.status}: ${res.statusText}`)
     return await res.json()
   } catch (err) {
     console.warn('Direct TMDB fetch failed, trying proxy fallback...', err.message)
     const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(url)}`
-    const proxyRes = await fetch(proxyUrl, {
-      headers: { 'Content-Type': 'application/json' },
-    })
-    if (!proxyRes.ok) throw new Error(`TMDB Proxy ${proxyRes.status}: ${proxyRes.statusText}`)
-    return await proxyRes.json()
+    try {
+      const proxyRes = await fetch(proxyUrl)
+      if (!proxyRes.ok) throw new Error(`TMDB Proxy ${proxyRes.status}: ${proxyRes.statusText}`)
+      return await proxyRes.json()
+    } catch (proxyErr) {
+      // Secondary fallback
+      const proxyUrl2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+      const proxyRes2 = await fetch(proxyUrl2)
+      if (!proxyRes2.ok) throw new Error(`TMDB Proxy 2 ${proxyRes2.status}: ${proxyRes2.statusText}`)
+      return await proxyRes2.json()
+    }
   }
 }
 
