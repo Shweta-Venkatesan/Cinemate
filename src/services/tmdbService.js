@@ -13,11 +13,22 @@ const buildUrl = (path, params = {}) => {
 }
 
 const fetcher = async (path, params = {}) => {
-  const res = await fetch(buildUrl(path, params), {
-    headers: { 'Content-Type': 'application/json' },
-  })
-  if (!res.ok) throw new Error(`TMDB ${res.status}: ${res.statusText}`)
-  return res.json()
+  const url = buildUrl(path, params)
+  try {
+    const res = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (!res.ok) throw new Error(`TMDB ${res.status}: ${res.statusText}`)
+    return await res.json()
+  } catch (err) {
+    console.warn('Direct TMDB fetch failed, trying proxy fallback...', err.message)
+    const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(url)}`
+    const proxyRes = await fetch(proxyUrl, {
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (!proxyRes.ok) throw new Error(`TMDB Proxy ${proxyRes.status}: ${proxyRes.statusText}`)
+    return await proxyRes.json()
+  }
 }
 
 // Filter out any adult-flagged movies (belt-and-suspenders on top of include_adult=false)
