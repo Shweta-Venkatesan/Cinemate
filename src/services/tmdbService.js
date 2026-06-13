@@ -6,6 +6,8 @@ const buildUrl = (path, params = {}) => {
   if (!TOKEN) throw new Error('TMDB API key missing')
   const url = new URL(`${BASE_URL}${path}`)
   url.searchParams.set('api_key', TOKEN)
+  // Always exclude adult content at the API level
+  url.searchParams.set('include_adult', 'false')
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
   return url.toString()
 }
@@ -17,6 +19,9 @@ const fetcher = async (path, params = {}) => {
   if (!res.ok) throw new Error(`TMDB ${res.status}: ${res.statusText}`)
   return res.json()
 }
+
+// Filter out any adult-flagged movies (belt-and-suspenders on top of include_adult=false)
+const filterAdult = (arr) => (arr || []).filter(m => !m.adult)
 
 // ─── Image Helpers ─────────────────────────────────────────────────────────────
 export const TMDB_KEY = TOKEN
@@ -42,17 +47,17 @@ export const getGenres = () => fetcher('/genre/movie/list')
   .then(d => d.genres)
 
 export const getTrending = (window = 'week') => fetcher(`/trending/movie/${window}`)
-  .then(d => d.results)
+  .then(d => filterAdult(d.results))
 
 export const getPopular = (page = 1) => fetcher('/movie/popular', { page })
-  .then(d => ({ results: d.results, totalPages: d.total_pages, page: d.page }))
+  .then(d => ({ results: filterAdult(d.results), totalPages: d.total_pages, page: d.page }))
 
 export const getTopRated = (page = 1) => fetcher('/movie/top_rated', { page })
-  .then(d => ({ results: d.results, totalPages: d.total_pages, page: d.page }))
+  .then(d => ({ results: filterAdult(d.results), totalPages: d.total_pages, page: d.page }))
 
 export const getByGenre = (genreId, page = 1) => fetcher('/discover/movie', {
   with_genres: genreId, sort_by: 'popularity.desc', page
-}).then(d => ({ results: d.results, totalPages: d.total_pages, page: d.page }))
+}).then(d => ({ results: filterAdult(d.results), totalPages: d.total_pages, page: d.page }))
 
 export const getMovieDetails = (id) => fetcher(`/movie/${id}`)
 
@@ -62,30 +67,30 @@ export const getVideos = (id) => fetcher(`/movie/${id}/videos`)
   .then(d => d.results.filter(v => v.type === 'Trailer' && v.site === 'YouTube'))
 
 export const getSimilar = (id, page = 1) => fetcher(`/movie/${id}/similar`, { page })
-  .then(d => d.results)
+  .then(d => filterAdult(d.results))
 
 export const getMovieRecommendations = (id, page = 1) => fetcher(`/movie/${id}/recommendations`, { page })
-  .then(d => d.results)
+  .then(d => filterAdult(d.results))
 
 export const getKeywords = (id) => fetcher(`/movie/${id}/keywords`)
   .then(d => d.keywords || [])
 
 export const getNowPlaying = (page = 1) => fetcher('/movie/now_playing', { page })
-  .then(d => d.results)
+  .then(d => filterAdult(d.results))
 
 export const getUpcoming = (page = 1) => fetcher('/movie/upcoming', { page })
-  .then(d => d.results)
+  .then(d => filterAdult(d.results))
 
 // ─── Search ────────────────────────────────────────────────────────────────────
 export const searchByTitle = (query, page = 1) => fetcher('/search/movie', { query, page })
-  .then(d => ({ results: d.results, totalPages: d.total_pages, page: d.page }))
+  .then(d => ({ results: filterAdult(d.results), totalPages: d.total_pages, page: d.page }))
 
 export const searchByActor = async (name) => {
   const people = await fetcher('/search/person', { query: name }).then(d => d.results)
   if (!people.length) return []
   const personId = people[0].id
   const movies = await fetcher('/discover/movie', { with_cast: personId, sort_by: 'popularity.desc' })
-    .then(d => d.results)
+    .then(d => filterAdult(d.results))
   return movies.map(m => ({ ...m, matchType: 'actor', matchLabel: people[0].name }))
 }
 
@@ -94,7 +99,7 @@ export const searchByKeyword = async (term) => {
   if (!keywords.length) return []
   const kwId = keywords[0].id
   const movies = await fetcher('/discover/movie', { with_keywords: kwId, sort_by: 'popularity.desc' })
-    .then(d => d.results)
+    .then(d => filterAdult(d.results))
   return movies.map(m => ({ ...m, matchType: 'keyword', matchLabel: keywords[0].name }))
 }
 
@@ -128,9 +133,9 @@ export const unifiedSearch = async (query) => {
     } catch (_) {}
   }
 
-  // Merge and deduplicate
+  // Merge, deduplicate and filter adult
   const seen = new Set()
-  const merged = [...titleMovies, ...actorMovies, ...kwMovies, ...genreMovies].filter(m => {
+  const merged = filterAdult([...titleMovies, ...actorMovies, ...kwMovies, ...genreMovies]).filter(m => {
     if (seen.has(m.id)) return false
     seen.add(m.id)
     return true

@@ -47,6 +47,10 @@ export const markAsWatched = async (uid, movieId) => {
   await updateDoc(doc(db, 'users', uid), { 'stats.totalWatched': increment(1) })
 }
 
+export const removeFromWatchHistory = async (uid, movieId) => {
+  await deleteDoc(doc(db, 'users', uid, 'watchHistory', String(movieId)))
+}
+
 export const getWatchHistory = async (uid) => {
   const q = query(collection(db, 'users', uid, 'watchHistory'), orderBy('lastViewedAt', 'desc'))
   const snap = await getDocs(q)

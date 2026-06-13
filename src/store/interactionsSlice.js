@@ -36,6 +36,10 @@ const interactionsSlice = createSlice({
       const idx = state.watchHistory.findIndex(m => m.movieId === movieId)
       if (idx >= 0) state.watchHistory[idx].completed = true
     },
+    removeFromWatchHistory: (state, action) => {
+      // action.payload = movieId
+      state.watchHistory = state.watchHistory.filter(m => m.movieId !== action.payload)
+    },
     setReaction: (state, action) => {
       const { movieId, reaction } = action.payload
       const idx = state.likedMovies.findIndex(m => m.movieId === movieId)
@@ -76,7 +80,7 @@ const interactionsSlice = createSlice({
 
 export const {
   setInteractions, setStatus,
-  upsertWatchHistory, setWatched,
+  upsertWatchHistory, setWatched, removeFromWatchHistory,
   setReaction, addToWatchlist, removeFromWatchlist,
   setRating, clearInteractions,
 } = interactionsSlice.actions

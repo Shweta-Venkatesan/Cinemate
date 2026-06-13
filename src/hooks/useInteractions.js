@@ -2,6 +2,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useCallback } from 'react'
 import {
   upsertWatchHistory as upsertWH, setWatched,
+  removeFromWatchHistory as removeWH,
   setReaction as setRxn, addToWatchlist as addWL,
   removeFromWatchlist as removeWL, setRating as setRtg,
 } from '../store/interactionsSlice'
@@ -39,6 +40,14 @@ export const useInteractions = () => {
     } catch (_) {
       dispatch(addToast({ type: 'error', message: 'Failed to mark as watched' }))
     }
+  }, [user, dispatch])
+
+  const removeContinueWatching = useCallback(async (movie) => {
+    if (!user) return
+    const movieId = movie.id || movie.movieId
+    dispatch(removeWH(movieId))
+    try { await fs.removeFromWatchHistory(user.uid, movieId) } catch (_) {}
+    dispatch(addToast({ type: 'info', message: `"${movie.title}" removed from Continue Watching` }))
   }, [user, dispatch])
 
   // ── Like / Dislike ───────────────────────────────────────────────────────────
@@ -87,6 +96,7 @@ export const useInteractions = () => {
   return {
     watchHistory, likedMovies, watchlist, ratings,
     recordView, markWatched, toggleReaction, toggleWatchlist, rateMovie,
+    removeContinueWatching,
     getReaction, inWatchlist, getRating, isWatched, continueWatching,
   }
 }

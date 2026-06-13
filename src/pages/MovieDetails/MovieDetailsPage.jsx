@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { Play, CheckCircle, Heart, Bookmark, BookmarkCheck, Star } from 'lucide-react'
 import { useMovieDetails } from '../../hooks/useTmdb'
 import { useInteractions } from '../../hooks/useInteractions'
@@ -15,28 +15,34 @@ export default function MovieDetailsPage() {
   const { id } = useParams()
   const { data, isLoading } = useMovieDetails(id)
   const [trailerOpen, setTrailerOpen] = useState(false)
-  const { 
+  const {
     recordView, markWatched, toggleReaction, toggleWatchlist, rateMovie,
-    getReaction, inWatchlist, getRating, isWatched 
+    getReaction, inWatchlist, getRating, isWatched
   } = useInteractions()
 
-  // Track view when details load
   useEffect(() => {
-    if (data?.details) {
-      recordView(data.details)
-    }
+    if (data?.details) recordView(data.details)
   }, [data?.details?.id, recordView])
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background pt-20">
-        <div className="w-full h-[70vh] skeleton" />
+        <div className="w-full h-[50vh] sm:h-[70vh] skeleton" />
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8 space-y-4">
+          <div className="h-8 w-2/3 skeleton rounded-xl" />
+          <div className="h-4 w-full skeleton rounded-xl" />
+          <div className="h-4 w-5/6 skeleton rounded-xl" />
+        </div>
       </div>
     )
   }
 
   if (!data?.details) {
-    return <div className="min-h-screen flex items-center justify-center pt-20 text-white">Movie not found</div>
+    return (
+      <div className="min-h-screen flex items-center justify-center pt-20 text-white">
+        Movie not found
+      </div>
+    )
   }
 
   const { details, credits, videos, similar } = data
@@ -50,124 +56,146 @@ export default function MovieDetailsPage() {
   return (
     <PageTransition>
       <div className="min-h-screen bg-background pb-20">
-        {/* Backdrop Header */}
-        <div className="relative w-full h-[50vh] sm:h-[70vh]">
+
+        {/* ── Backdrop Hero ─────────────────────────────────────────────────── */}
+        <div className="relative w-full h-[42vh] sm:h-[65vh] lg:h-[75vh]">
+          {/* Background image */}
           <div className="absolute inset-0">
             {details.backdrop_path ? (
               <img
                 src={backdropUrl(details.backdrop_path)}
                 alt={details.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-top"
               />
             ) : (
               <div className="w-full h-full bg-surface-light" />
             )}
             <div className="absolute inset-0 bg-hero-overlay" />
-            <div className="absolute inset-x-0 bottom-0 h-32 bg-bottom-fade" />
+            <div className="absolute inset-x-0 bottom-0 h-40 bg-bottom-fade" />
           </div>
 
-          <div className="absolute inset-0 pt-20">
-            <div className="max-w-[1400px] mx-auto px-6 h-full flex items-end pb-8">
-              <div className="flex flex-col md:flex-row gap-8 items-end relative z-10 w-full">
-                {/* Poster - hidden on small mobile, shown on tablet up */}
-                <motion.div 
+          {/* Hero overlay content */}
+          <div className="absolute inset-x-0 bottom-0 z-10">
+            <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-5 sm:pb-10">
+              <div className="flex flex-row gap-3 sm:gap-8 items-end w-full">
+
+                {/* Poster */}
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="hidden sm:block w-48 lg:w-64 shrink-0 rounded-2xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10"
+                  className="w-16 sm:w-40 lg:w-56 shrink-0 rounded-lg sm:rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border border-white/10"
                 >
-                  <img src={posterUrl(details.poster_path, 'w500')} alt={details.title} className="w-full" />
+                  {details.poster_path ? (
+                    <img
+                      src={posterUrl(details.poster_path, 'w342')}
+                      alt={details.title}
+                      className="w-full block"
+                    />
+                  ) : (
+                    <div className="aspect-[2/3] bg-surface-light flex items-center justify-center">
+                      <span className="text-2xl">🎬</span>
+                    </div>
+                  )}
                 </motion.div>
 
-                {/* Info */}
-                <motion.div 
+                {/* Text info */}
+                <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="flex-1 pb-2"
+                  className="flex-1 min-w-0 pb-1"
                 >
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {details.genres?.map(g => (
-                      <span key={g.id} className="badge bg-white/10 text-white border border-white/20">
+                  {/* Badges */}
+                  <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-1 sm:mb-2">
+                    {details.genres?.slice(0, 2).map(g => (
+                      <span
+                        key={g.id}
+                        className="badge bg-white/10 text-white border border-white/20 text-[9px] sm:text-xs"
+                      >
                         {g.name}
                       </span>
                     ))}
-                    <span className="badge bg-transparent border border-white/20 text-text-secondary">
+                    <span className="badge bg-transparent border border-white/20 text-text-secondary text-[9px] sm:text-xs">
                       {details.release_date?.slice(0, 4)}
                     </span>
-                    <span className="badge bg-transparent border border-white/20 text-text-secondary">
-                      {details.runtime} min
-                    </span>
+                    {details.runtime > 0 && (
+                      <span className="badge bg-transparent border border-white/20 text-text-secondary text-[9px] sm:text-xs hidden sm:inline-flex">
+                        {details.runtime} min
+                      </span>
+                    )}
                   </div>
 
-                  <h1 className="font-display font-bold text-4xl lg:text-6xl text-white mb-2 leading-tight">
+                  {/* Title */}
+                  <h1 className="font-display font-bold text-xl sm:text-4xl lg:text-6xl text-white leading-tight mb-1 line-clamp-2">
                     {details.title}
                   </h1>
 
+                  {/* Tagline — hidden on xs */}
                   {details.tagline && (
-                    <p className="text-xl text-text-secondary italic mb-6">"{details.tagline}"</p>
+                    <p className="hidden sm:block text-sm sm:text-base text-text-secondary italic mb-3 sm:mb-4 line-clamp-1">
+                      "{details.tagline}"
+                    </p>
                   )}
 
-                  <div className="flex items-center gap-6 mb-8">
+                  {/* Rating + Director — hidden on xs, shown in body instead */}
+                  <div className="hidden sm:flex flex-wrap items-center gap-4 mb-4 sm:mb-6">
                     <div className="flex items-center gap-2">
-                      <Star className="w-6 h-6 fill-accent-gold text-accent-gold" />
+                      <Star className="w-5 h-5 fill-accent-gold text-accent-gold" />
                       <div>
-                        <p className="text-white font-bold text-lg leading-none">{details.vote_average?.toFixed(1)}<span className="text-sm text-text-secondary font-normal">/10</span></p>
-                        <p className="text-xs text-text-secondary">TMDB Rating</p>
+                        <p className="text-white font-bold text-base leading-none">
+                          {details.vote_average?.toFixed(1)}
+                          <span className="text-xs text-text-secondary font-normal">/10</span>
+                        </p>
+                        <p className="text-[10px] text-text-secondary">TMDB Rating</p>
                       </div>
                     </div>
                     {director && (
-                      <div className="border-l border-white/10 pl-6">
-                        <p className="text-white font-medium leading-none">{director.name}</p>
-                        <p className="text-xs text-text-secondary">Director</p>
+                      <div className="border-l border-white/10 pl-4">
+                        <p className="text-white font-medium text-sm leading-none">{director.name}</p>
+                        <p className="text-[10px] text-text-secondary">Director</p>
                       </div>
                     )}
                   </div>
 
-                  {/* Action Bar */}
-                  <div className="flex flex-wrap items-center gap-3">
+                  {/* Action bar — hidden on xs, shown in body instead */}
+                  <div className="hidden sm:flex flex-wrap items-center gap-2 sm:gap-3">
                     {trailerVideo && (
-                      <button 
-                        onClick={() => {
-                          setTrailerOpen(true)
-                          recordView(details)
-                        }} 
+                      <button
+                        onClick={() => { setTrailerOpen(true); recordView(details) }}
                         className="btn-primary"
                       >
-                        <Play className="w-5 h-5 fill-white" />
+                        <Play className="w-4 h-4 fill-white" />
                         Play Trailer
                       </button>
                     )}
-
-                    <button 
+                    <button
                       onClick={() => markWatched(details)}
                       disabled={watched}
-                      className={`btn-secondary ${watched ? 'opacity-50 cursor-default border-accent-green text-accent-green' : ''}`}
+                      className={`btn-secondary ${watched ? 'opacity-60 cursor-default border-accent-green text-accent-green' : ''}`}
                     >
-                      <CheckCircle className={`w-5 h-5 ${watched ? 'fill-accent-green/20' : ''}`} />
-                      {watched ? 'Watched' : 'Mark as Watched'}
+                      <CheckCircle className={`w-4 h-4 ${watched ? 'fill-accent-green/20' : ''}`} />
+                      {watched ? 'Watched' : 'Mark Watched'}
                     </button>
-
-                    <div className="flex gap-2 ml-1">
-                      <ActionIcon 
-                        active={reaction === 'like'} 
+                    <div className="flex gap-2">
+                      <ActionIcon
+                        active={reaction === 'like'}
                         activeClass="bg-primary text-white border-transparent"
                         onClick={() => toggleReaction(details, 'like')}
                         title="Like"
                       >
-                        <Heart className={`w-5 h-5 ${reaction === 'like' ? 'fill-current' : ''}`} />
+                        <Heart className={`w-4 h-4 ${reaction === 'like' ? 'fill-current' : ''}`} />
                       </ActionIcon>
-                      <ActionIcon 
-                        active={saved} 
+                      <ActionIcon
+                        active={saved}
                         activeClass="bg-accent-green text-white border-transparent"
                         onClick={() => toggleWatchlist(details)}
                         title="Watchlist"
                       >
-                        {saved ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+                        {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
                       </ActionIcon>
                     </div>
-
-                    <div className="ml-4 pl-4 border-l border-white/10 flex items-center gap-3">
-                      <span className="text-sm text-text-secondary">Rate:</span>
-                      <StarRating value={myRating} onChange={(v) => rateMovie(details, v)} />
+                    <div className="flex items-center gap-2 pl-3 border-l border-white/10">
+                      <span className="text-xs text-text-secondary">Rate:</span>
+                      <StarRating value={myRating} onChange={v => rateMovie(details, v)} />
                     </div>
                   </div>
                 </motion.div>
@@ -176,41 +204,118 @@ export default function MovieDetailsPage() {
           </div>
         </div>
 
-        {/* Content Body */}
-        <div className="max-w-[1400px] mx-auto px-6 py-12">
-          <div className="grid lg:grid-cols-3 gap-12">
-            <div className="lg:col-span-2">
-              <h3 className="section-title">Overview</h3>
-              <p className="text-text-secondary text-lg leading-relaxed mb-12">
-                {details.overview}
+        {/* ── Mobile-only action panel (below hero) ────────────────────────── */}
+        <div className="sm:hidden max-w-[1400px] mx-auto px-4 py-4 border-b border-white/5 space-y-3">
+          {/* Rating + Director row */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <Star className="w-4 h-4 fill-accent-gold text-accent-gold" />
+              <p className="text-white font-bold text-sm">
+                {details.vote_average?.toFixed(1)}
+                <span className="text-xs text-text-secondary font-normal">/10</span>
               </p>
+            </div>
+            {director && (
+              <div className="border-l border-white/10 pl-4">
+                <p className="text-white text-sm font-medium leading-none">{director.name}</p>
+                <p className="text-[10px] text-text-secondary">Director</p>
+              </div>
+            )}
+            {details.runtime > 0 && (
+              <div className="border-l border-white/10 pl-4">
+                <p className="text-white text-sm font-medium leading-none">{details.runtime} min</p>
+                <p className="text-[10px] text-text-secondary">Runtime</p>
+              </div>
+            )}
+          </div>
 
-              {credits?.cast?.length > 0 && (
-                <div className="mb-12">
-                  <h3 className="section-title">Top Cast</h3>
-                  <div className="row-scroll">
-                    {credits.cast.slice(0, 10).map(actor => (
-                      <CastCard key={actor.id} actor={actor} />
-                    ))}
-                  </div>
-                </div>
-              )}
+          {/* Tagline on mobile */}
+          {details.tagline && (
+            <p className="text-xs text-text-secondary italic line-clamp-2">"{details.tagline}"</p>
+          )}
+
+          {/* Action buttons on mobile */}
+          <div className="flex flex-wrap gap-2">
+            {trailerVideo && (
+              <button
+                onClick={() => { setTrailerOpen(true); recordView(details) }}
+                className="btn-primary text-sm px-4 py-2"
+              >
+                <Play className="w-4 h-4 fill-white" />
+                Trailer
+              </button>
+            )}
+            <button
+              onClick={() => markWatched(details)}
+              disabled={watched}
+              className={`btn-secondary text-sm px-4 py-2 ${watched ? 'opacity-60 cursor-default border-accent-green text-accent-green' : ''}`}
+            >
+              <CheckCircle className={`w-4 h-4 ${watched ? 'fill-accent-green/20' : ''}`} />
+              {watched ? 'Watched' : 'Mark Watched'}
+            </button>
+            <div className="flex gap-2">
+              <ActionIcon
+                active={reaction === 'like'}
+                activeClass="bg-primary text-white border-transparent"
+                onClick={() => toggleReaction(details, 'like')}
+                title="Like"
+              >
+                <Heart className={`w-4 h-4 ${reaction === 'like' ? 'fill-current' : ''}`} />
+              </ActionIcon>
+              <ActionIcon
+                active={saved}
+                activeClass="bg-accent-green text-white border-transparent"
+                onClick={() => toggleWatchlist(details)}
+                title="Watchlist"
+              >
+                {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+              </ActionIcon>
             </div>
           </div>
 
+          {/* Star rating on mobile */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-text-secondary">Your Rating:</span>
+            <StarRating value={myRating} onChange={v => rateMovie(details, v)} />
+          </div>
+        </div>
+
+        {/* ── Content Body ─────────────────────────────────────────────────── */}
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          {/* Overview */}
+          <div className="mb-8 sm:mb-12">
+            <h3 className="section-title">Overview</h3>
+            <p className="text-text-secondary text-sm sm:text-base lg:text-lg leading-relaxed">
+              {details.overview || 'No overview available.'}
+            </p>
+          </div>
+
+          {/* Top Cast */}
+          {credits?.cast?.length > 0 && (
+            <div className="mb-8 sm:mb-12">
+              <h3 className="section-title">Top Cast</h3>
+              <div className="row-scroll">
+                {credits.cast.slice(0, 10).map(actor => (
+                  <CastCard key={actor.id} actor={actor} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Similar Movies */}
           {similar?.length > 0 && (
-            <div className="mt-8">
+            <div className="mt-4">
               <MovieRow title="Similar Movies" movies={similar} />
             </div>
           )}
         </div>
       </div>
 
-      <TrailerModal 
-        isOpen={trailerOpen} 
-        onClose={() => setTrailerOpen(false)} 
+      <TrailerModal
+        isOpen={trailerOpen}
+        onClose={() => setTrailerOpen(false)}
         videoId={trailerVideo?.key}
-        title={`${details.title} - Trailer`} 
+        title={`${details.title} — Trailer`}
       />
     </PageTransition>
   )
@@ -220,7 +325,7 @@ const ActionIcon = ({ active, activeClass, onClick, children, title }) => (
   <button
     title={title}
     onClick={onClick}
-    className={`w-12 h-12 rounded-full border flex items-center justify-center transition-all duration-200 ${
+    className={`w-9 h-9 sm:w-11 sm:h-11 rounded-full border flex items-center justify-center transition-all duration-200 ${
       active ? activeClass : 'border-white/20 text-text-secondary hover:text-white hover:border-white/40 bg-surface'
     }`}
   >

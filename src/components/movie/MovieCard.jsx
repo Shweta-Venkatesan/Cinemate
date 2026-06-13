@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, HeartOff, Bookmark, BookmarkCheck, Info, Star } from 'lucide-react'
+import { Heart, Bookmark, BookmarkCheck, Info, Star, X } from 'lucide-react'
 import { posterUrl } from '../../services/tmdbService'
 import { useInteractions } from '../../hooks/useInteractions'
 import { GENRE_MAP } from '../../services/tmdbService'
@@ -13,7 +13,7 @@ const MATCH_BADGE = {
   keyword: { label: '#️⃣ Keyword', cls: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' },
 }
 
-export default function MovieCard({ movie, showBadge = false, reason = null, compact = false }) {
+export default function MovieCard({ movie, showBadge = false, reason = null, compact = false, onRemove = null }) {
   const navigate = useNavigate()
   const { toggleReaction, toggleWatchlist, getReaction, inWatchlist } = useInteractions()
   const [imgError, setImgError] = useState(false)
@@ -70,6 +70,17 @@ export default function MovieCard({ movie, showBadge = false, reason = null, com
 
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+
+        {/* Remove button — shown only in Continue Watching row */}
+        {onRemove && (
+          <button
+            title="Remove from Continue Watching"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(movie) }}
+            className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-black/70 hover:bg-red-500 text-white flex items-center justify-center transition-colors duration-150 z-20"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        )}
 
         {/* Match badge */}
         {badge && (

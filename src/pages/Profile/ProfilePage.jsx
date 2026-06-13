@@ -214,11 +214,20 @@ export default function ProfilePage() {
                 setDeleteError('')
                 setIsDeleting(true)
                 try {
-                  await deleteAccount(user.uid, password)
-                  // Auth state listener will clear Redux store automatically
+                  // Re-authenticate & start deletion (may throw on bad password)
+                  // We navigate away first so there are no flash screens
+                  const capturedUid = user.uid
+                  const capturedPassword = password
+                  // Close modal and navigate immediately for clean UX
+                  setDeleteModalOpen(false)
                   navigate('/', { replace: true })
+                  // Finish deletion in background (Redux/Firestore clear via onAuthStateChanged)
+                  await deleteAccount(capturedUid, capturedPassword)
                 } catch (err) {
                   console.error('Delete failed:', err)
+                  // If we already navigated away we can't show in-modal errors,
+                  // so re-open modal with error message if user is still present
+                  setDeleteModalOpen(true)
                   if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
                     setDeleteError('Incorrect password. Please try again.')
                   } else if (err.code === 'auth/too-many-requests') {

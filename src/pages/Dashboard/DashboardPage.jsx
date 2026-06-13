@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const { data: thriller, isLoading: loadThriller } = useByGenre(53)
   const { data: scifi, isLoading: loadScifi } = useByGenre(878)
 
-  const { continueWatching } = useInteractions()
+  const { continueWatching, removeContinueWatching } = useInteractions()
   const { items: recommendations, status: recsStatus, isStale, recompute } = useRecommendations()
 
   // Recompute recommendations if needed
@@ -48,19 +48,19 @@ export default function DashboardPage() {
   return (
     <PageTransition>
       <div className="min-h-screen bg-background pb-20">
-        <HeroBanner 
-          movies={trending?.slice(0, 5)} 
-          onPlayTrailer={handlePlayTrailer} 
+        <HeroBanner
+          movies={trending?.slice(0, 5)}
+          onPlayTrailer={handlePlayTrailer}
         />
 
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 -mt-8 sm:-mt-12 relative z-20 space-y-8 sm:space-y-12">
-          
+
           {continueWatching.length > 0 && (
-            <MovieRow 
-              title="Continue Watching" 
-              movies={continueWatching} 
-              isLoading={false} 
-              cardProps={{ compact: true }}
+            <MovieRow
+              title="Continue Watching"
+              movies={continueWatching}
+              isLoading={false}
+              cardProps={{ compact: true, onRemove: removeContinueWatching }}
             />
           )}
 
