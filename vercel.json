@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/tmdb-api/:match*",
+      "destination": "https://api.themoviedb.org/3/:match*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

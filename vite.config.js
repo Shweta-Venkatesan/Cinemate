@@ -7,6 +7,13 @@ export default defineConfig({
     port: 5173,
     headers: {
       "Cross-Origin-Opener-Policy": "same-origin-allow-popups"
+    },
+    proxy: {
+      '/tmdb-api': {
+        target: 'https://api.themoviedb.org/3',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/tmdb-api/, '')
+      }
     }
   },
   resolve: {

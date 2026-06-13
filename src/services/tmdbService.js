@@ -1,10 +1,10 @@
-// TMDB API — called directly (TMDB natively supports CORS, no proxy needed)
-const BASE_URL = 'https://api.themoviedb.org/3'
+// TMDB API — proxied through Vercel/Vite to bypass ISP blocks
+const BASE_URL = '/tmdb-api'
 const TOKEN = import.meta.env.VITE_TMDB_API_KEY
 
 const buildUrl = (path, params = {}) => {
   if (!TOKEN) throw new Error('TMDB API key missing')
-  const url = new URL(`${BASE_URL}${path}`)
+  const url = new URL(path, window.location.origin + BASE_URL)
   url.searchParams.set('api_key', TOKEN)
   // Always exclude adult content at the API level
   url.searchParams.set('include_adult', 'false')
@@ -14,25 +14,9 @@ const buildUrl = (path, params = {}) => {
 
 const fetcher = async (path, params = {}) => {
   const url = buildUrl(path, params)
-  try {
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`TMDB ${res.status}: ${res.statusText}`)
-    return await res.json()
-  } catch (err) {
-    console.warn('Direct TMDB fetch failed, trying proxy fallback...', err.message)
-    const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(url)}`
-    try {
-      const proxyRes = await fetch(proxyUrl)
-      if (!proxyRes.ok) throw new Error(`TMDB Proxy ${proxyRes.status}: ${proxyRes.statusText}`)
-      return await proxyRes.json()
-    } catch (proxyErr) {
-      // Secondary fallback
-      const proxyUrl2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-      const proxyRes2 = await fetch(proxyUrl2)
-      if (!proxyRes2.ok) throw new Error(`TMDB Proxy 2 ${proxyRes2.status}: ${proxyRes2.statusText}`)
-      return await proxyRes2.json()
-    }
-  }
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`TMDB ${res.status}: ${res.statusText}`)
+  return await res.json()
 }
 
 // Filter out any adult-flagged movies (belt-and-suspenders on top of include_adult=false)
