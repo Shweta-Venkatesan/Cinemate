@@ -59,7 +59,7 @@ export async function computeRecommendations(interactions, favoriteGenres = [], 
     // Fetch from Seed Movies
     seedMovieIds.forEach(id => {
       promises.push(
-        getMovieRecommendations(id).then(d => d.results.map(m => ({ ...m, reason: 'similar' })))
+        getMovieRecommendations(id).then(d => d.map(m => ({ ...m, reason: 'similar' })))
       )
     })
 

@@ -1,8 +1,9 @@
-import { useCallback } from 'react'
+import { useMemo, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { setRecommendations, setRecsStatus } from '../store/recommendationsSlice'
 import { computeRecommendations } from '../services/recommendationEngine'
 import { saveRecommendations, getUser, getSearchHistory } from '../services/firestoreService'
+import { filterAdult } from '../services/tmdbService'
 
 export const useRecommendations = () => {
   const dispatch = useDispatch()
@@ -54,5 +55,8 @@ export const useRecommendations = () => {
   // Should we recompute? (stale after 24h or never computed)
   const isStale = !generatedAt || (Date.now() - generatedAt) > 86400000
 
-  return { items, basis, coldStart, status, isStale, recompute }
+  // Apply filterAdult dynamically to strip out explicitly cached explicit content
+  const filteredItems = useMemo(() => filterAdult(items || []), [items])
+
+  return { items: filteredItems, basis, coldStart, status, isStale, recompute }
 }

@@ -21,11 +21,16 @@ const fetcher = async (path, params = {}) => {
 }
 
 // Filter out any adult-flagged movies (belt-and-suspenders on top of include_adult=false)
-const explicitKeywords = ['sex', 'nudity', 'erotic', 'porn', 'explicit'];
-const filterAdult = (arr) => (arr || []).filter(m => {
+const explicitKeywords = [
+  'sex', 'sexual', 'sexuality', 'nudity', 'nude', 'erotic', 'erotica', 'porn', 'pornography',
+  'explicit', 'bdsm', 'incest', 'softcore', 'hardcore', 'orgasm', 'striptease',
+  'stripper', 'prostitute', 'prostitution', 'whore', 'brothel', 'escort', 'lust', 'seduce', 'seduction'
+];
+export const filterAdult = (arr) => (arr || []).filter(m => {
   if (m.adult) return false;
   const text = `${m.title || ''} ${m.overview || ''}`.toLowerCase();
-  return !explicitKeywords.some(kw => new RegExp(`\\b${kw}\\b`).test(text));
+  // using \bkw to match the start of the word, allowing kw matches like "sexual" for "sex"
+  return !explicitKeywords.some(kw => new RegExp(`\\b${kw}`).test(text));
 });
 
 // ─── Image Helpers ─────────────────────────────────────────────────────────────
@@ -112,6 +117,9 @@ export const unifiedSearch = async (query) => {
   if (!query?.trim()) return { results: [], totalPages: 0 }
 
   const q = query.toLowerCase().trim()
+  
+  const isExplicitQuery = explicitKeywords.some(kw => new RegExp(`\\b${kw}`).test(q));
+  if (isExplicitQuery) return { results: [], totalPages: 0 }
 
   // Run all searches in parallel
   const [titleData, actorResults, keywordResults] = await Promise.allSettled([
