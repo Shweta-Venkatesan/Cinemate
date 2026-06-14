@@ -218,15 +218,12 @@ export default function ProfilePage() {
                   // We navigate away first so there are no flash screens
                   const capturedUid = user.uid
                   const capturedPassword = password
-                  // Close modal and navigate immediately for clean UX
+                  // Finish deletion first, then navigate away
+                  await deleteAccount(capturedUid, capturedPassword)
                   setDeleteModalOpen(false)
                   navigate('/', { replace: true })
-                  // Finish deletion in background (Redux/Firestore clear via onAuthStateChanged)
-                  await deleteAccount(capturedUid, capturedPassword)
                 } catch (err) {
                   console.error('Delete failed:', err)
-                  // If we already navigated away we can't show in-modal errors,
-                  // so re-open modal with error message if user is still present
                   setDeleteModalOpen(true)
                   if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
                     setDeleteError('Incorrect password. Please try again.')
@@ -234,6 +231,8 @@ export default function ProfilePage() {
                     setDeleteError('Too many failed attempts. Please try again later.')
                   } else if (err.code === 'auth/popup-closed-by-user') {
                     setDeleteError('Sign-in popup was closed. Please try again.')
+                  } else if (err.code === 'auth/requires-recent-login') {
+                    setDeleteError('For security, please sign out and sign in again before deleting your account.')
                   } else {
                     setDeleteError(err.message || 'Failed to delete account. Please try again.')
                   }

@@ -105,17 +105,21 @@ export const AuthProvider = ({ children }) => {
     const currentUser = auth.currentUser
     if (!currentUser) throw new Error('No authenticated user found.')
 
-    // Step 1: Re-authenticate to satisfy Firebase's recent-login requirement
+    // Step 1: Re-authenticate ONLY if we really need to
     try {
       const provider = currentUser.providerData?.[0]?.providerId
-      if (provider === 'google.com') {
-        await reauthenticateWithPopup(currentUser, googleProvider)
-      } else if (password) {
+      if (password) {
+        // Always verify password if provided
         const credential = EmailAuthProvider.credential(currentUser.email, password)
         await reauthenticateWithCredential(currentUser, credential)
+      } else if (provider === 'google.com') {
+        // For Google, only re-auth if session is older than 5 minutes to avoid annoying popups
+        const lastSignIn = new Date(currentUser.metadata.lastSignInTime).getTime()
+        if (Date.now() - lastSignIn > 5 * 60 * 1000) {
+          await reauthenticateWithPopup(currentUser, googleProvider)
+        }
       }
     } catch (reAuthErr) {
-      // If re-auth itself fails, surface that error
       throw reAuthErr
     }
 
@@ -123,7 +127,22 @@ export const AuthProvider = ({ children }) => {
     await deleteUserData(uid)
 
     // Step 3: Delete the Firebase Auth user
-    await deleteUser(currentUser)
+    try {
+      await deleteUser(currentUser)
+    } catch (err) {
+      // If we guessed wrong and it still needs recent login, do it now
+      if (err.code === 'auth/requires-recent-login') {
+        const provider = currentUser.providerData?.[0]?.providerId
+        if (provider === 'google.com') {
+          await reauthenticateWithPopup(currentUser, googleProvider)
+          await deleteUser(currentUser)
+        } else {
+          throw err
+        }
+      } else {
+        throw err
+      }
+    }
   }
 
   return (
